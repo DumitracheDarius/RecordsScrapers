@@ -12,10 +12,24 @@ WORKDIR /app
 # 1️⃣ Update + deps esențiale
 RUN apt-get update && apt-get install -y wget unzip curl gnupg ca-certificates
 
-# 2️⃣ Deps pentru Chrome
-RUN apt-get install -y fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 \
-    libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 \
-    libxcomposite1 libxrandr2 libxss1 libxtst6 xdg-utils
+# 2️⃣ Deps pentru Chrome – fără libasound2 direct
+RUN apt-get install -y --no-install-recommends \
+    fonts-liberation \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libgdk-pixbuf2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libxcomposite1 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
+    libpulse0 \
+    libasound2t64 \
+    xdg-utils
+
 
 # 3️⃣ Setează versiunea de Chrome for Testing
 ENV CHROME_VERSION=122.0.6261.94
