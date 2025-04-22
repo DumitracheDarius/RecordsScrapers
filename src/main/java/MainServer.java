@@ -5,7 +5,8 @@ import java.net.InetSocketAddress;
 
 public class MainServer {
     public static void main(String[] args) throws Exception {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8000"));
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
         // înregistrăm ambele endpointuri
         server.createContext("/scrape", new SimpleScraperServer.ScraperHandler());
