@@ -15,6 +15,8 @@ import java.time.Duration;
 
 public class ShazamScraper {
     public static String scrape(String songName, String artist) {
+        System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
+
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");

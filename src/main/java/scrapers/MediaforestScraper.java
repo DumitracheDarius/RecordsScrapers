@@ -17,6 +17,8 @@ public class MediaforestScraper {
         String username = "stefan.lucian@globalrecords.com";
         String password = "Amprentare123!";
 
+        System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
+
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage");
         WebDriver driver = new ChromeDriver(options);
