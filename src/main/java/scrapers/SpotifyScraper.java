@@ -19,7 +19,7 @@ public class SpotifyScraper {
         options.setBinary(System.getenv("CHROME_BIN"));
 
 // ⛳️ Cele mai stabile flaguri pentru headless în Docker/Render:
-        options.addArguments("--headless"); // 👈 Nu "new"
+        options.addArguments("--headless=chrome"); // 👈 Nu "new"
         options.addArguments("--disable-gpu");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
