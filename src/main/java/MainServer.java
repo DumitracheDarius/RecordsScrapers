@@ -14,7 +14,6 @@ public class MainServer {
         server.createContext("/images", new SimpleScraperServer.ImageHandler());
 
         server.setExecutor(null); // default
-        System.out.println("Server started at http://localhost:8000");
         server.start();
     }
 }
