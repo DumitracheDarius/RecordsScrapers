@@ -16,12 +16,12 @@ public class SpotifyScraper {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
         ChromeOptions options = new ChromeOptions();
-        options.setBinary(System.getenv("CHROME_BIN")); // 👈 Asta e ESENȚIALĂ în Docker!
-        options.addArguments("--headless=new");
+        options.setBinary(System.getenv("CHROME_BIN"));
+        options.addArguments("--headless"); // 👈 DOAR atât
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
-        options.addArguments("--remote-debugging-port=9222");
+
         WebDriver driver = new ChromeDriver(options);
 
         String encodedQuery;
