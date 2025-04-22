@@ -9,16 +9,15 @@ FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 
-# ✅ Instalăm Chromium + ChromeDriver din repo-urile stabile + deps
+# Instalăm Chromium + ChromeDriver + deps (cu libasound2t64)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     chromium-driver chromium \
-    fonts-liberation libasound2 libatk-bridge2.0-0 libatk1.0-0 \
+    fonts-liberation libasound2t64 libatk-bridge2.0-0 libatk1.0-0 \
     libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 libnspr4 libnss3 \
     libxcomposite1 libxrandr2 libxss1 libxtst6 xdg-utils && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ENV-uri pentru Selenium
 ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
 ENV PATH="${CHROMEDRIVER_PATH}:${PATH}"
