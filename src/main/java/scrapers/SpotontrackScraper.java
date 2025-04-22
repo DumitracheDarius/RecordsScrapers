@@ -28,10 +28,25 @@ public class SpotontrackScraper {
 
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
-        options.addArguments("--headless"); // 👈 DOAR atât
+
+// ⛳️ Cele mai stabile flaguri pentru headless în Docker/Render:
+        options.addArguments("--headless"); // 👈 Nu "new"
+        options.addArguments("--disable-gpu");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--disable-gpu");
+        options.addArguments("--disable-software-rasterizer");
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("--single-process");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--start-maximized");
+        options.addArguments("--disable-background-networking");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        options.addArguments("--metrics-recording-only");
+        options.addArguments("--mute-audio");
+        options.addArguments("--no-first-run");
+        options.addArguments("--safebrowsing-disable-auto-update");
+
 
         WebDriver driver = new ChromeDriver(options);
 
@@ -133,6 +148,10 @@ public class SpotontrackScraper {
             result.put("spotontrack_spotify_image", "http://localhost:8000/images/" + filename);
 
 
+
+            System.out.println("CHROME_BIN = " + System.getenv("CHROME_BIN"));
+            System.out.println("CHROMEDRIVER_PATH = " + System.getenv("CHROMEDRIVER_PATH"));
+            System.out.println("PATH = " + System.getenv("PATH"));
 
 
         } catch (Exception e) {
