@@ -1,10 +1,5 @@
 services:
   - type: web
     name: java-scraper-backend
-    env: java
-    buildCommand: "mvn clean package"
-    startCommand: "java -cp target/classes MainServer"
-    envVars:
-      - key: JAVA_VERSION
-        value: 17
+    env: docker
     plan: free
