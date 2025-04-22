@@ -27,8 +27,12 @@ public class SpotontrackScraper {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
         ChromeOptions options = new ChromeOptions();
-        options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage");
-        options.addArguments("--start-maximized");
+        options.setBinary(System.getenv("CHROME_BIN")); // 👈 Asta e ESENȚIALĂ în Docker!
+        options.addArguments("--headless=new");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--remote-debugging-port=9222");
         WebDriver driver = new ChromeDriver(options);
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(40));
