@@ -41,7 +41,7 @@
             <configuration>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>MainServer</mainClass> <!-- sau pachetul complet dacă e în pachet -->
+                  <mainClass>org.example.MainServer</mainClass>
                 </transformer>
               </transformers>
             </configuration>

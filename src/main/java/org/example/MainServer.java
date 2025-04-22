@@ -1,7 +1,9 @@
+package org.example;
+
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpHandler;
-import java.io.*;
+
 import java.net.InetSocketAddress;
+
 
 public class MainServer {
     public static void main(String[] args) throws Exception {

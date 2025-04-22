@@ -1,9 +1,8 @@
+package org.example;
+
 import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import scrapers.SpotifyScraper;
-import scrapers.YtbScraper;
-import scrapers.ShazamScraper;
 
 import java.io.IOException;
 import java.io.InputStreamReader;

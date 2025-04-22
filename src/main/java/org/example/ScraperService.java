@@ -1,9 +1,10 @@
+package org.example;
+
 import com.google.gson.Gson;
 import scrapers.ChartexScraper;
 import scrapers.ShazamScraper;
 import scrapers.SpotifyScraper;
 import scrapers.YtbScraper;
-import scrapers.MediaforestScraper;
 import scrapers.SpotontrackScraper;
 
 import java.util.Map;
