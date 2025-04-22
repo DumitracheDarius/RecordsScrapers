@@ -16,8 +16,6 @@ import java.util.List;
 
 public class YtbScraper {
     public static String scrape(String songName, String artist) {
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\dumit\\Downloads\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe");
-
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");

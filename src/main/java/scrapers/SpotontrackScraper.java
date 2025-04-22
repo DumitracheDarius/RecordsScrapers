@@ -24,7 +24,6 @@ public class SpotontrackScraper {
         String username = "corina.vilcu@globalrecords.com";
         String password = "Romanica123^$$!";
 
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\dumit\\Desktop\\ChromeDriver\\chromedriver-win64\\chromedriver.exe");
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage");
         options.addArguments("--start-maximized");

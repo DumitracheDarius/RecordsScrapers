@@ -21,8 +21,6 @@ import java.util.List;
 
 public class ChartexScraper {
     public static String scrape(String song, String artist) {
-        System.setProperty("webdriver.chrome.driver", "C:\\Users\\dumit\\Downloads\\chromedriver-win64\\chromedriver-win64\\chromedriver.exe");
-
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage");
         WebDriver driver = new ChromeDriver(options);
