@@ -26,7 +26,6 @@ public class YtbScraper {
 
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
-        options.addArguments("--user-data-dir=" + uniqueProfile);
 
         // Cele mai stabile flaguri
         options.addArguments("--headless=chrome");
