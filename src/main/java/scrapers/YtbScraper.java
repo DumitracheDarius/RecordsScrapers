@@ -30,6 +30,10 @@ public class YtbScraper {
         }
 
 
+        System.out.println("Chrome version: " + System.getenv("CHROME_BIN"));
+        System.out.println("Chromedriver path: " + System.getenv("CHROMEDRIVER_PATH"));
+        System.out.println("Profile dir: " + uniqueProfile);
+
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
 
@@ -50,6 +54,7 @@ public class YtbScraper {
         options.addArguments("--no-first-run");
         options.addArguments("--safebrowsing-disable-auto-update");
         options.addArguments("--user-data-dir=" + uniqueProfile);  // ✅ OBLIGATORIU
+        options.addArguments("--remote-debugging-port=9222");
 
         WebDriver driver = null;
         String resultJson = "";
