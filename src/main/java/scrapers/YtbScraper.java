@@ -5,10 +5,15 @@ import org.openqa.selenium.chrome.*;
 import org.openqa.selenium.support.ui.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 
 public class YtbScraper {
@@ -16,9 +21,14 @@ public class YtbScraper {
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
-        // 1️⃣ Creează profil Chrome unic și creează folderul fizic
-        String uniqueProfile = "/tmp/chrome-profile-" + System.currentTimeMillis();
-        new File(uniqueProfile).mkdirs();  // 👈 Obligă existența folderului
+        String uniqueProfile;
+        try {
+            Path tempDir = Files.createTempDirectory("chrome-profile-");
+            uniqueProfile = tempDir.toAbsolutePath().toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+        }
+
 
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
@@ -79,12 +89,16 @@ public class YtbScraper {
                 driver.quit();
             }
 
-            // Curăță profilul
             try {
-                Runtime.getRuntime().exec("rm -rf " + uniqueProfile);
-            } catch (Exception ignored) {}
-        }
+                Files.walk(Paths.get(uniqueProfile))
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (IOException ignored) {
+            }
 
-        return resultJson;
+
+            return resultJson;
+        }
     }
 }
