@@ -37,8 +37,9 @@ RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.
     unzip chromedriver-linux64.zip && mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
     chmod +x /usr/local/bin/chromedriver
 
-# 4️⃣ Link binar Chrome în PATH
+# 4️⃣ Link binar Chrome în PATH + permisiuni
 RUN ln -s /opt/chrome/chrome /usr/local/bin/chrome
+RUN chmod +x /opt/chrome/chrome
 
 # 5️⃣ Cleanup
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/*
@@ -47,6 +48,7 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/*
 ENV CHROME_BIN=/usr/local/bin/chrome
 ENV CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ENV PATH="${CHROMEDRIVER_PATH}:${PATH}"
+ENV DISPLAY=:99
 
 # 7️⃣ Copiază aplicația
 COPY --from=build /app/target/RecordsScrapers-1.0-SNAPSHOT.jar /app/app.jar
