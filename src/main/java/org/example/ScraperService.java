@@ -64,11 +64,11 @@ public class ScraperService {
                 "  \"song\": \"" + song + "\",\n" +
                 "  \"artist\": \"" + artist + "\",\n" +
                 "  \"youtube\": " + youtube + ",\n" +
-                "  \"spotify\": " + spotify + ",\n" +
-                "  \"shazam\": " + shazam + ",\n" +
-                "  \"chartex\": " + chartex + ",\n" +
+//                "  \"spotify\": " + spotify + ",\n" +
+//                "  \"shazam\": " + shazam + ",\n" +
+//                "  \"chartex\": " + chartex + ",\n" +
 //                "  \"mediaforest\": " + mediaforest + ",\n" +
-                "  \"spotontrack\": " + spotontrack + "\n" +
+//                "  \"spotontrack\": " + spotontrack + "\n" +
                 "}";
     }
 }
