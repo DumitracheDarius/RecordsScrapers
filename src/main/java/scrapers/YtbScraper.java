@@ -4,6 +4,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.*;
 import org.openqa.selenium.support.ui.*;
 
+import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -15,18 +16,32 @@ public class YtbScraper {
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
+
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
 
+        options.addArguments("--user-data-dir=/tmp/profile");
+        new File("/tmp/profile").mkdirs(); // dacă chiar vrei, dar încearcă fără
+
         // ✅ Cele mai compatibile flaguri POSIBILE pentru Render
-        options.addArguments("--headless"); // 🟢 folosește varianta clasică
+        options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
+        options.addArguments("--disable-software-rasterizer");
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--disable-extensions");
-        options.addArguments("--disable-features=VizDisplayCompositor"); // 👈 uneori previne crash la headless
+        options.addArguments("--start-maximized");
+        options.addArguments("--disable-background-networking");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        options.addArguments("--metrics-recording-only");
         options.addArguments("--mute-audio");
+        options.addArguments("--no-first-run");
+        options.addArguments("--safebrowsing-disable-auto-update");
+        options.addArguments("--remote-debugging-port=0");
+        options.addArguments("--user-data-dir=" + uniqueProfile);  // ✅ păstrează-l
+
 
         WebDriver driver = null;
         String resultJson = "";
