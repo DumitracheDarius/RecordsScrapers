@@ -5,10 +5,15 @@ import org.openqa.selenium.chrome.*;
 import org.openqa.selenium.support.ui.*;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 
 public class YtbScraper {
@@ -16,14 +21,23 @@ public class YtbScraper {
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
+        String uniqueProfile;
+        try {
+            Path tempDir = Files.createTempDirectory("chrome-profile-");
+            uniqueProfile = tempDir.toAbsolutePath().toString();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+        }
+
+
+        System.out.println("Chrome version: " + System.getenv("CHROME_BIN"));
+        System.out.println("Chromedriver path: " + System.getenv("CHROMEDRIVER_PATH"));
+        System.out.println("Profile dir: " + uniqueProfile);
 
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
 
-        options.addArguments("--user-data-dir=/tmp/profile");
-        new File("/tmp/profile").mkdirs(); // dacă chiar vrei, dar încearcă fără
-
-        // ✅ Cele mai compatibile flaguri POSIBILE pentru Render
+        // 2️⃣ Adaugă toate flagurile corecte
         options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
@@ -80,8 +94,17 @@ public class YtbScraper {
             if (driver != null) {
                 driver.quit();
             }
-        }
 
-        return resultJson;
+            try {
+                Files.walk(Paths.get(uniqueProfile))
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (IOException ignored) {
+            }
+
+
+            return resultJson;
+        }
     }
 }
