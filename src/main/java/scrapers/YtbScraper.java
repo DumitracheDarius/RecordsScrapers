@@ -4,16 +4,10 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.*;
 import org.openqa.selenium.support.ui.*;
 
-import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Comparator;
 import java.util.List;
 
 public class YtbScraper {
@@ -21,40 +15,18 @@ public class YtbScraper {
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
-        String uniqueProfile;
-        try {
-            Path tempDir = Files.createTempDirectory("chrome-profile-");
-            uniqueProfile = tempDir.toAbsolutePath().toString();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
-        }
-
-
-        System.out.println("Chrome version: " + System.getenv("CHROME_BIN"));
-        System.out.println("Chromedriver path: " + System.getenv("CHROMEDRIVER_PATH"));
-        System.out.println("Profile dir: " + uniqueProfile);
-
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
 
-        // 2️⃣ Adaugă toate flagurile corecte
-        options.addArguments("--headless=new");
+        // ✅ Cele mai compatibile flaguri POSIBILE pentru Render
+        options.addArguments("--headless"); // 🟢 folosește varianta clasică
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
-        options.addArguments("--disable-software-rasterizer");
         options.addArguments("--window-size=1920,1080");
         options.addArguments("--disable-extensions");
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-background-networking");
-        options.addArguments("--disable-default-apps");
-        options.addArguments("--disable-sync");
-        options.addArguments("--metrics-recording-only");
+        options.addArguments("--disable-features=VizDisplayCompositor"); // 👈 uneori previne crash la headless
         options.addArguments("--mute-audio");
-        options.addArguments("--no-first-run");
-        options.addArguments("--safebrowsing-disable-auto-update");
-        options.addArguments("--user-data-dir=" + uniqueProfile);  // ✅ OBLIGATORIU
-        options.addArguments("--remote-debugging-port=9222");
 
         WebDriver driver = null;
         String resultJson = "";
@@ -93,17 +65,8 @@ public class YtbScraper {
             if (driver != null) {
                 driver.quit();
             }
-
-            try {
-                Files.walk(Paths.get(uniqueProfile))
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            } catch (IOException ignored) {
-            }
-
-
-            return resultJson;
         }
+
+        return resultJson;
     }
 }
