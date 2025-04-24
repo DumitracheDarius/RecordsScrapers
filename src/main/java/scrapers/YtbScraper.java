@@ -38,23 +38,23 @@ public class YtbScraper {
         options.setBinary(System.getenv("CHROME_BIN"));
 
         // 2️⃣ Adaugă toate flagurile corecte
-//        options.addArguments("--headless=new");
-//        options.addArguments("--no-sandbox");
-//        options.addArguments("--disable-dev-shm-usage");
-//        options.addArguments("--disable-gpu");
-//        options.addArguments("--disable-software-rasterizer");
-//        options.addArguments("--window-size=1920,1080");
-//        options.addArguments("--disable-extensions");
-//        options.addArguments("--start-maximized");
-//        options.addArguments("--disable-background-networking");
-//        options.addArguments("--disable-default-apps");
-//        options.addArguments("--disable-sync");
-//        options.addArguments("--metrics-recording-only");
-//        options.addArguments("--mute-audio");
-//        options.addArguments("--no-first-run");
-//        options.addArguments("--safebrowsing-disable-auto-update");
-//        options.addArguments("--remote-debugging-port=0");
-//        options.addArguments("--user-data-dir=" + uniqueProfile);  // ✅ păstrează-l
+        options.addArguments("--headless=new");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");
+        options.addArguments("--disable-software-rasterizer");
+        options.addArguments("--window-size=1920,1080");
+        options.addArguments("--disable-extensions");
+        options.addArguments("--start-maximized");
+        options.addArguments("--disable-background-networking");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        options.addArguments("--metrics-recording-only");
+        options.addArguments("--mute-audio");
+        options.addArguments("--no-first-run");
+        options.addArguments("--safebrowsing-disable-auto-update");
+        options.addArguments("--remote-debugging-port=0");
+        options.addArguments("--user-data-dir=" + uniqueProfile);  // ✅ păstrează-l
 
 
         WebDriver driver = null;
