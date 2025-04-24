@@ -29,11 +29,11 @@ RUN apt-get install -y --no-install-recommends \
     libasound2t64 \
     xdg-utils
 
-# 3️⃣ Download Chrome + Chromedriver (versiunea 135.0.7049.97)
-RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.97/linux64/chrome-linux64.zip && \
+# 3️⃣ Download Chrome + Chromedriver (versiunea 121.0.6167.184)
+RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/121.0.6167.184/linux64/chrome-linux64.zip && \
     unzip chrome-linux64.zip && mv chrome-linux64 /opt/chrome
 
-RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/135.0.7049.97/linux64/chromedriver-linux64.zip && \
+RUN wget -q https://storage.googleapis.com/chrome-for-testing-public/121.0.6167.184/linux64/chromedriver-linux64.zip && \
     unzip chromedriver-linux64.zip && mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
     chmod +x /usr/local/bin/chromedriver
 
