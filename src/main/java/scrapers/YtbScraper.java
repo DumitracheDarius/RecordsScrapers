@@ -38,7 +38,7 @@ public class YtbScraper {
         options.setBinary(System.getenv("CHROME_BIN"));
 
         // 2️⃣ Adaugă toate flagurile corecte
-        options.addArguments("--headless=new");
+//        options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--disable-gpu");
