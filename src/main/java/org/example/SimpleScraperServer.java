@@ -18,15 +18,15 @@ import com.sun.net.httpserver.HttpServer;
 
 public class SimpleScraperServer {
 
-    public static void main(String[] args) throws IOException {
-        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
-        server.createContext("/scrape", new ScraperHandler());
-        server.createContext("/download", new CsvDownloadHandler());
-        server.createContext("/images", new ImageHandler());
-        server.setExecutor(null);
-        System.out.println("Server started on port 8000...");
-        server.start();
-    }
+//    public static void main(String[] args) throws IOException {
+//        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+//        server.createContext("/scrape", new ScraperHandler());
+//        server.createContext("/download", new CsvDownloadHandler());
+//        server.createContext("/images", new ImageHandler());
+//        server.setExecutor(null);
+//        System.out.println("Server started on port 8000...");
+//        server.start();
+//    }
 
     static class ScraperHandler implements HttpHandler {
         static class RequestBody {

@@ -17,5 +17,7 @@ public class MainServer {
 
         server.setExecutor(null); // default
         server.start();
+
+        System.out.println("Server started on port " + port + "...");
     }
 }
