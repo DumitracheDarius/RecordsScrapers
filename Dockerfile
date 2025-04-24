@@ -54,4 +54,5 @@ ENV DISPLAY=:99
 COPY --from=build /app/target/RecordsScrapers-1.0-SNAPSHOT.jar /app/app.jar
 
 EXPOSE 8000
-CMD ["java", "-jar", "app.jar"]
+CMD ["mvn", "exec:java"]
+
