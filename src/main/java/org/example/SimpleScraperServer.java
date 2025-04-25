@@ -16,16 +16,6 @@ import com.sun.net.httpserver.HttpServer;
 
 public class SimpleScraperServer {
 
-//    public static void main(String[] args) throws IOException {
-//        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
-//        server.createContext("/scrape", new ScraperHandler());
-//        server.createContext("/download", new CsvDownloadHandler());
-//        server.createContext("/images", new ImageHandler());
-//        server.setExecutor(null);
-//        System.out.println("Server started on port 8000...");
-//        server.start();
-//    }
-
     static class ScraperHandler implements HttpHandler {
         static class RequestBody {
             String song_name;
@@ -35,6 +25,7 @@ public class SimpleScraperServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             try {
+                // Add CORS headers
                 String origin = exchange.getRequestHeaders().getFirst("Origin");
                 if (origin != null) {
                     exchange.getResponseHeaders().add("Access-Control-Allow-Origin", origin);
@@ -45,7 +36,7 @@ public class SimpleScraperServer {
                 exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
                 exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
 
-                if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
                     exchange.sendResponseHeaders(204, -1);
                     return;
                 }
@@ -93,7 +84,6 @@ public class SimpleScraperServer {
                 os.close();
             }
         }
-
     }
 
     static class CsvDownloadHandler implements HttpHandler {
@@ -101,6 +91,13 @@ public class SimpleScraperServer {
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
             String query = exchange.getRequestURI().getQuery();
             String[] params = query.split("&");
             String song = null, artist = null;
@@ -123,7 +120,6 @@ public class SimpleScraperServer {
             String sanitizedSong = song.replaceAll("\\s+", "_");
             String sanitizedArtist = artist.replaceAll("\\s+", "_");
 
-            // Support both TikTok and Spotontrack CSVs
             String[] possibleFiles = {
                     sanitizedSong + "_" + sanitizedArtist + "_tiktok.csv",
                     sanitizedSong + "_" + sanitizedArtist + "_spotontrack.csv"
@@ -133,7 +129,7 @@ public class SimpleScraperServer {
             String fileName = null;
 
             for (String fname : possibleFiles) {
-                Path path = Paths.get("C:\\Users\\dumit\\Desktop\\Records Scrapers", fname);
+                Path path = Paths.get("images", fname);
                 if (Files.exists(path)) {
                     filePath = path;
                     fileName = fname;
@@ -166,12 +162,19 @@ public class SimpleScraperServer {
         }
     }
 
-
     static class ImageHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            String uriPath = exchange.getRequestURI().getPath(); // e.g., /images/Disturbed_minelli_mediaforest.png
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            String uriPath = exchange.getRequestURI().getPath();
             String filename = uriPath.replace("/images/", "");
 
             Path imagePath = Paths.get("images", filename);
