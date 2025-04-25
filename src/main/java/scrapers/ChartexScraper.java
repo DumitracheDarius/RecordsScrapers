@@ -1,67 +1,53 @@
 package scrapers;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.*;
 
-import java.io.FileWriter;
+import java.io.File;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ChartexScraper {
     public static String scrape(String song, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
+        Path tempProfile;
+        try {
+            tempProfile = Files.createTempDirectory("chrome-profile-chartex");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+        }
+
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
-
-// ⛳️ Cele mai stabile flaguri pentru headless în Docker/Render:
-        options.addArguments("--headless=chrome"); // 👈 Nu "new"
-        options.addArguments("--disable-gpu");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--disable-software-rasterizer");
-        options.addArguments("--window-size=1920,1080");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-extensions");
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-background-networking");
-        options.addArguments("--disable-default-apps");
-        options.addArguments("--disable-sync");
-        options.addArguments("--metrics-recording-only");
-        options.addArguments("--mute-audio");
-        options.addArguments("--no-first-run");
-        options.addArguments("--safebrowsing-disable-auto-update");
-
-
+        options.addArguments(
+                "--headless=new",
+                "--disable-gpu",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-software-rasterizer",
+                "--window-size=1920,1080",
+                "--user-data-dir=" + tempProfile.toAbsolutePath()
+        );
 
         WebDriver driver = new ChromeDriver(options);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
-
-        String searchTerm = artist + " " + song;
         String resultJson;
 
         try {
+            String searchTerm = artist + " " + song;
             driver.get("https://chartex.com");
             Thread.sleep(1500);
 
             WebElement searchInput = wait.until(
                     ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[placeholder='Search for a sound']"))
             );
-            searchInput.sendKeys(searchTerm);
-            Thread.sleep(1000);
-            searchInput.sendKeys(Keys.ENTER);
+            searchInput.sendKeys(searchTerm, Keys.ENTER);
 
             Thread.sleep(2000);
 
@@ -71,13 +57,13 @@ public class ChartexScraper {
                     )
             );
             firstResult.click();
-
             Thread.sleep(2000);
 
             WebElement statsBox = wait.until(
                     ExpectedConditions.visibilityOfElementLocated(
                             By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
-                    ));
+                    )
+            );
 
             List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
             List<List<String>> allData = new ArrayList<>();
@@ -91,11 +77,9 @@ public class ChartexScraper {
                 for (int i = 0; i < cells.size(); i++) {
                     String cellText = cells.get(i).getText().replace("\"", "'");
 
-                    // Dacă este ultima coloană, încercăm să luăm href-ul
                     if (i == cells.size() - 1) {
                         WebElement link = cells.get(i).findElement(By.tagName("a"));
-                        String href = link.getAttribute("href");
-                        cellText = href;
+                        cellText = link.getAttribute("href");
                     }
 
                     rowData.add(cellText);
@@ -111,35 +95,34 @@ public class ChartexScraper {
             }
             rowsJson.append("]");
 
-            // Scriem CSV pe disk
+            // Scrie CSV pe disk
             String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_tiktok.csv";
             Path csvPath = Paths.get(System.getProperty("user.dir"), fileName);
-            System.out.println("CSV saved at: " + csvPath.toAbsolutePath());
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8))) {
-                // Header (opțional, dar recomandat)
                 writer.println("Rank;Username;Followers;Country;Date;Views;Likes;Comments;Saves;Shares;Link");
                 for (List<String> row : allData) {
-                    writer.println(String.join(";", row)); // FOLOSIM `;` ca delimitator
+                    writer.println(String.join(";", row));
                 }
             }
 
-
             resultJson = "{\n" +
                     "  \"chartexStats\": \"" + statsBox.getText().replace("\"", "'").replace("\n", " ") + "\",\n" +
-                    "  \"tiktokRows\": " + rowsJson.toString() + "\n" +
+                    "  \"tiktokRows\": " + rowsJson + "\n" +
                     "}";
 
         } catch (Exception e) {
             resultJson = "{ \"error\": \"Chartex scrape failed: " + e.getMessage().replace("\"", "'") + "\" }";
+        } finally {
+            driver.quit();
+            try {
+                Files.walk(tempProfile)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (Exception ignored) {}
         }
 
-        System.out.println("CHROME_BIN = " + System.getenv("CHROME_BIN"));
-        System.out.println("CHROMEDRIVER_PATH = " + System.getenv("CHROMEDRIVER_PATH"));
-        System.out.println("PATH = " + System.getenv("PATH"));
-
-
-        driver.quit();
         return resultJson;
     }
 }

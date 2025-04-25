@@ -18,40 +18,26 @@ import java.util.List;
 import java.util.UUID;
 
 public class YtbScraper {
-
     public static String scrape(String songName, String artist) {
-        System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
-
-        String uniqueProfile;
-        try {
-            Path tempDir = Files.createTempDirectory("chrome-profile-");
-            uniqueProfile = tempDir.toAbsolutePath().toString();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
-        }
-
-
-        System.out.println("Chrome version: " + System.getenv("CHROME_BIN"));
-        System.out.println("Chromedriver path: " + System.getenv("CHROMEDRIVER_PATH"));
-        System.out.println("Profile dir: " + uniqueProfile);
-
-        ChromeOptions options = new ChromeOptions();
-        options.setBinary(System.getenv("CHROME_BIN"));
-
-        options.addArguments(
-                "--headless=new",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-                "--remote-allow-origins=*",
-                "--user-data-dir=/tmp/chrome-user-data-" + UUID.randomUUID()
-        );
-
-        WebDriver driver = new ChromeDriver(options);
-
+        WebDriver driver = null;
         String resultJson = "";
 
+        Path userDataDir = null;
         try {
+            // Creează un director temporar unic
+            userDataDir = Files.createTempDirectory("chrome-user-data-");
+
+            ChromeOptions options = new ChromeOptions();
+            options.setBinary(System.getenv("CHROME_BIN"));
+            options.addArguments(
+                    "--headless=new",
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--remote-allow-origins=*",
+                    "--user-data-dir=" + userDataDir.toAbsolutePath()
+            );
+
             driver = new ChromeDriver(options);
 
             String encodedQuery = URLEncoder.encode(songName + " " + artist, StandardCharsets.UTF_8.toString());
@@ -67,10 +53,12 @@ public class YtbScraper {
                 String titleText = titleElement.getAttribute("title").toLowerCase();
 
                 if (titleText.contains(songName.toLowerCase()) && titleText.contains(artist.toLowerCase())) {
-                    WebElement viewsElement = video.findElement(By.xpath(".//span[contains(text(), 'de vizionări')]"));
+                    WebElement metadata = video.findElement(By.id("metadata-line"));
+                    List<WebElement> spans = metadata.findElements(By.tagName("span"));
+                    String viewsText = spans.get(0).getText(); // de obicei e primul span
 
                     resultJson = "{ \"Youtube title\": \"" + titleElement.getAttribute("title") + "\", " +
-                            "\"Youtube views\": \"" + viewsElement.getText() + "\" }";
+                            "\"Youtube views\": \"" + viewsText + "\" }";
                     break;
                 }
             }
@@ -86,16 +74,17 @@ public class YtbScraper {
                 driver.quit();
             }
 
-            try {
-                Files.walk(Paths.get(uniqueProfile))
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
-            } catch (IOException ignored) {
+            if (userDataDir != null) {
+                try {
+                    Files.walk(userDataDir)
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                } catch (IOException ignored) {}
             }
-
-
-            return resultJson;
         }
+
+        return resultJson;
     }
 }
+

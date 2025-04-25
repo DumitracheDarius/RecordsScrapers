@@ -2,14 +2,14 @@ package scrapers;
 
 import classes.SongSelector;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.*;
 
 import java.io.File;
+import java.nio.file.*;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MediaforestScraper {
 
@@ -19,32 +19,27 @@ public class MediaforestScraper {
 
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
+        Path tempProfile;
+        try {
+            tempProfile = Files.createTempDirectory("chrome-profile-mediaforest");
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+        }
+
         ChromeOptions options = new ChromeOptions();
         options.setBinary(System.getenv("CHROME_BIN"));
-
-// ⛳️ Cele mai stabile flaguri pentru headless în Docker/Render:
-        options.addArguments("--headless=chrome"); // 👈 Nu "new"
-        options.addArguments("--disable-gpu");
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("--disable-software-rasterizer");
-        options.addArguments("--window-size=1920,1080");
-        options.addArguments("--single-process");
-        options.addArguments("--disable-extensions");
-        options.addArguments("--start-maximized");
-        options.addArguments("--disable-background-networking");
-        options.addArguments("--disable-default-apps");
-        options.addArguments("--disable-sync");
-        options.addArguments("--metrics-recording-only");
-        options.addArguments("--mute-audio");
-        options.addArguments("--no-first-run");
-        options.addArguments("--safebrowsing-disable-auto-update");
-
+        options.addArguments(
+                "--headless=new",
+                "--disable-gpu",
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-software-rasterizer",
+                "--window-size=1920,1080",
+                "--user-data-dir=" + tempProfile.toAbsolutePath()
+        );
 
         WebDriver driver = new ChromeDriver(options);
-
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
-        String resultPath = "";
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -63,9 +58,7 @@ public class MediaforestScraper {
             Thread.sleep(1000);
 
             WebElement checkbox = wait.until(ExpectedConditions.elementToBeClickable(By.id("ContentPlaceHolder1_cbSearchArtist")));
-            if (checkbox.isSelected()) {
-                checkbox.click();
-            }
+            if (checkbox.isSelected()) checkbox.click();
             Thread.sleep(500);
 
             WebElement artistInput = driver.findElement(By.id("ContentPlaceHolder1_ddlArtists"));
@@ -101,24 +94,27 @@ public class MediaforestScraper {
             Thread.sleep(1000);
 
             File screenshot = chartSection.getScreenshotAs(OutputType.FILE);
-            String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_mediaforest.png";
-            File dest = new File("images" + File.separator + fileName);
-            org.apache.commons.io.FileUtils.copyFile(screenshot, dest);
 
-            System.out.println("Screenshot salvat la: " + dest.getAbsolutePath());
-            resultPath = dest.getAbsolutePath();
+            Path imageDir = Paths.get(System.getProperty("user.dir"), "images");
+            if (!Files.exists(imageDir)) Files.createDirectories(imageDir);
+
+            String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_mediaforest.png";
+            Path dest = imageDir.resolve(fileName);
+            Files.copy(screenshot.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+
             result.put("mediaforest_image_url", "http://localhost:8000/images/" + fileName);
 
-            System.out.println("CHROME_BIN = " + System.getenv("CHROME_BIN"));
-            System.out.println("CHROMEDRIVER_PATH = " + System.getenv("CHROMEDRIVER_PATH"));
-            System.out.println("PATH = " + System.getenv("PATH"));
-
-
         } catch (Exception e) {
-            System.err.println("Scraper error: " + e.getMessage());
-            result.put("error", e.getMessage());
+            e.printStackTrace();
+            result.put("error", "Mediaforest scrape failed: " + e.getMessage());
         } finally {
             driver.quit();
+            try {
+                Files.walk(tempProfile)
+                        .sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            } catch (Exception ignored) {}
         }
 
         return result;

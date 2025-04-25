@@ -7,6 +7,8 @@ import scrapers.SpotifyScraper;
 import scrapers.YtbScraper;
 import scrapers.SpotontrackScraper;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Map;
 
 public class ScraperService {
@@ -20,55 +22,43 @@ public class ScraperService {
         String mediaforest = "";
         String spotontrack = "";
 
+        youtube = safeScrape(() -> YtbScraper.scrape(song, artist), "YTB");
+        spotify = safeScrape(() -> SpotifyScraper.scrape(song, artist), "Spotify");
+        shazam = safeScrape(() -> ShazamScraper.scrape(song, artist), "Shazam");
+        chartex = safeScrape(() -> ChartexScraper.scrape(song, artist), "Chartex");
 
-        try {
-            youtube = YtbScraper.scrape(song, artist);
-        } catch (Exception e) {
-            youtube = "{ \"error\": \"YTB Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-        }
+        // Decomentează dacă activezi Mediaforest
+        // mediaforest = safeScrape(() -> gson.toJson(MediaforestScraper.scrape(song, artist)), "Mediaforest");
 
-        try {
-            spotify = SpotifyScraper.scrape(song, artist);
-        } catch (Exception e) {
-            spotify = "{ \"error\": \"Spotify Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-        }
-
-        try {
-            shazam = ShazamScraper.scrape(song, artist);
-        } catch (Exception e) {
-            shazam = "{ \"error\": \"Shazam Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-        }
-
-
-        try {
-            chartex = ChartexScraper.scrape(song, artist);
-        } catch (Exception e) {
-            chartex = "{ \"error\": \"Chartex Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-        }
-
-//        try {
-//            Map<String, Object> mediaforestMap = MediaforestScraper.scrape(song, artist);
-//            mediaforest = gson.toJson(mediaforestMap);
-//        } catch (Exception e) {
-//            mediaforest = "{ \"error\": \"Mediaforest Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-//        }
-
-        try {
-            Map<String, Object> spotontrackMap = SpotontrackScraper.scrape(song, artist);
-            spotontrack = gson.toJson(spotontrackMap);
-        } catch (Exception e) {
-            spotontrack = "{ \"error\": \"Spotontrack Exception: " + e.getMessage().replace("\"", "'") + "\" }";
-        }
+        spotontrack = safeScrape(() -> gson.toJson(SpotontrackScraper.scrape(song, artist)), "Spotontrack");
 
         return "{\n" +
                 "  \"song\": \"" + song + "\",\n" +
                 "  \"artist\": \"" + artist + "\",\n" +
                 "  \"youtube\": " + youtube + ",\n" +
-//                "  \"spotify\": " + spotify + ",\n" +
-//                "  \"shazam\": " + shazam + ",\n" +
-//                "  \"chartex\": " + chartex + ",\n" +
+                "  \"spotify\": " + spotify + ",\n" +
+                "  \"shazam\": " + shazam + ",\n" +
+                "  \"chartex\": " + chartex + ",\n" +
 //                "  \"mediaforest\": " + mediaforest + ",\n" +
-//                "  \"spotontrack\": " + spotontrack + "\n" +
+                "  \"spotontrack\": " + spotontrack + "\n" +
                 "}";
+    }
+
+    // Util funcțional pentru a trata erorile în mod sigur
+    private String safeScrape(ScrapeFunction scrape, String platform) {
+        try {
+            return scrape.scrape();
+        } catch (Exception e) {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String trace = sw.toString().replace("\"", "'").replace("\n", "\\n");
+            return "{ \"error\": \"" + platform + " Exception\", \"trace\": \"" + trace + "\" }";
+        }
+    }
+
+    // Functional interface
+    @FunctionalInterface
+    interface ScrapeFunction {
+        String scrape() throws Exception;
     }
 }

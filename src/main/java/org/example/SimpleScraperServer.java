@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -36,54 +34,68 @@ public class SimpleScraperServer {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            String origin = exchange.getRequestHeaders().getFirst("Origin");
-            if (origin != null) {
-                // Dacă Origin e trimis (ex: din browser), returnăm acel origin în CORS
-                exchange.getResponseHeaders().add("Access-Control-Allow-Origin", origin);
-            } else {
-                // Dacă nu e Origin (ex: Postman), permitem toate (doar pentru testare locală)
-                exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            try {
+                String origin = exchange.getRequestHeaders().getFirst("Origin");
+                if (origin != null) {
+                    exchange.getResponseHeaders().add("Access-Control-Allow-Origin", origin);
+                } else {
+                    exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+                }
+                exchange.getResponseHeaders().add("Access-Control-Allow-Credentials", "true");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+                exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+
+                if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                    exchange.sendResponseHeaders(204, -1);
+                    return;
+                }
+
+                if (!"POST".equals(exchange.getRequestMethod())) {
+                    exchange.sendResponseHeaders(405, -1);
+                    return;
+                }
+
+                InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
+                RequestBody body = new Gson().fromJson(reader, RequestBody.class);
+
+                if (body.song_name == null || body.artist == null ||
+                        body.song_name.trim().isEmpty() || body.artist.trim().isEmpty()) {
+                    String response = "Missing 'song_name' or 'artist' parameter.";
+                    exchange.sendResponseHeaders(400, response.length());
+                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.close();
+                    return;
+                }
+
+                System.out.println("Scraping for: " + body.song_name + " by " + body.artist);
+
+                ScraperService service = new ScraperService();
+                String jsonResponse = service.scrapeAll(body.song_name, body.artist);
+
+                if (jsonResponse == null) {
+                    jsonResponse = "{ \"error\": \"Empty response from scraper.\" }";
+                }
+
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, jsonResponse.getBytes().length);
+                OutputStream os = exchange.getResponseBody();
+                os.write(jsonResponse.getBytes());
+                os.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                StringWriter sw = new StringWriter();
+                e.printStackTrace(new PrintWriter(sw));
+                String error = "{ \"error\": \"Exception: " + e.toString().replace("\"", "'") + "\", \"trace\": \"" + sw.toString().replace("\"", "'").replace("\n", "\\n") + "\" }";
+
+                exchange.sendResponseHeaders(500, error.length());
+                OutputStream os = exchange.getResponseBody();
+                os.write(error.getBytes());
+                os.close();
             }
-            exchange.getResponseHeaders().add("Access-Control-Allow-Credentials", "true");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-
-
-            if ("OPTIONS".equals(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(204, -1);
-                return;
-            }
-
-            if (!"POST".equals(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(405, -1);
-                return;
-            }
-
-            // Citește JSON-ul primit
-            InputStreamReader reader = new InputStreamReader(exchange.getRequestBody(), StandardCharsets.UTF_8);
-            RequestBody body = new Gson().fromJson(reader, RequestBody.class);
-
-            if (body.song_name == null || body.artist == null ||
-                    body.song_name.trim().isEmpty() || body.artist.trim().isEmpty()) {
-                String response = "Missing 'song_name' or 'artist' parameter.";
-                exchange.sendResponseHeaders(400, response.length());
-                exchange.getResponseBody().write(response.getBytes());
-                exchange.close();
-                return;
-            }
-
-            System.out.println("Scraping for: " + body.song_name + " by " + body.artist);
-
-            ScraperService service = new ScraperService();
-            String jsonResponse = service.scrapeAll(body.song_name, body.artist);
-
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, jsonResponse.getBytes().length);
-            OutputStream os = exchange.getResponseBody();
-            os.write(jsonResponse.getBytes());
-            os.close();
         }
+
     }
+
     static class CsvDownloadHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
@@ -179,5 +191,4 @@ public class SimpleScraperServer {
             os.close();
         }
     }
-
 }
