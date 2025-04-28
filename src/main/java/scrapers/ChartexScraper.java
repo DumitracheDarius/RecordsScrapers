@@ -97,7 +97,12 @@ public class ChartexScraper {
 
             // Scrie CSV pe disk
             String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_tiktok.csv";
-            Path csvPath = Paths.get(System.getProperty("user.dir"), fileName);
+            Path imagesDir = Paths.get(System.getProperty("user.dir"), "images");
+            if (!Files.exists(imagesDir)) {
+                Files.createDirectories(imagesDir);
+            }
+            Path csvPath = imagesDir.resolve(fileName);
+
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8))) {
                 writer.println("Rank;Username;Followers;Country;Date;Views;Likes;Comments;Saves;Shares;Link");
