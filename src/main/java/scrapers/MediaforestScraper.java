@@ -41,9 +41,14 @@ public class MediaforestScraper {
                 "--no-first-run",
                 "--no-default-browser-check",
                 "--disable-infobars"
+
         );
         options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
         options.setExperimentalOption("useAutomationExtension", false);
+        options.setAcceptInsecureCerts(true);
+        options.addArguments("--allow-running-insecure-content");
+        options.addArguments("--ignore-certificate-errors");
+
 
 
         WebDriver driver = new ChromeDriver(options);
