@@ -1,5 +1,8 @@
 package scrapers;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -67,42 +70,30 @@ public class ChartexScraper {
 
             List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
             List<List<String>> allData = new ArrayList<>();
-            StringBuilder rowsJson = new StringBuilder("[");
 
             for (WebElement row : tableRows) {
                 List<WebElement> cells = row.findElements(By.tagName("td"));
                 List<String> rowData = new ArrayList<>();
-                rowsJson.append("[");
 
                 for (int i = 0; i < cells.size(); i++) {
-                    String cellText = cells.get(i).getText().replace("\"", "'");
-
+                    String cellText = cells.get(i).getText().replace("\"", "'").replace("\n", " ").replace("\r", " ");
                     if (i == cells.size() - 1) {
                         WebElement link = cells.get(i).findElement(By.tagName("a"));
                         cellText = link.getAttribute("href");
                     }
-
                     rowData.add(cellText);
-                    rowsJson.append("\"").append(cellText).append("\"");
-                    if (i < cells.size() - 1) rowsJson.append(",");
                 }
 
                 allData.add(rowData);
-                rowsJson.append("],");
             }
-            if (rowsJson.charAt(rowsJson.length() - 1) == ',') {
-                rowsJson.setLength(rowsJson.length() - 1);
-            }
-            rowsJson.append("]");
 
-            // Scrie CSV pe disk
+            // Scriem CSV corect
             String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_tiktok.csv";
             Path imagesDir = Paths.get(System.getProperty("user.dir"), "images");
             if (!Files.exists(imagesDir)) {
                 Files.createDirectories(imagesDir);
             }
             Path csvPath = imagesDir.resolve(fileName);
-
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8))) {
                 writer.println("Rank;Username;Followers;Country;Date;Views;Likes;Comments;Saves;Shares;Link");
@@ -111,13 +102,27 @@ public class ChartexScraper {
                 }
             }
 
-            resultJson = "{\n" +
-                    "  \"chartexStats\": \"" + statsBox.getText().replace("\"", "'").replace("\n", " ") + "\",\n" +
-                    "  \"tiktokRows\": " + rowsJson + "\n" +
-                    "}";
+            // Construim JSON-ul safe cu Gson
+            JsonObject responseJson = new JsonObject();
+            responseJson.addProperty("chartexStats", statsBox.getText().replace("\"", "'").replace("\n", " ").replace("\r", " "));
+
+            JsonArray rowsArray = new JsonArray();
+            for (List<String> row : allData) {
+                JsonArray rowArray = new JsonArray();
+                for (String cell : row) {
+                    rowArray.add(cell);
+                }
+                rowsArray.add(rowArray);
+            }
+            responseJson.add("tiktokRows", rowsArray);
+
+            resultJson = new Gson().toJson(responseJson);
 
         } catch (Exception e) {
-            resultJson = "{ \"error\": \"Chartex scrape failed: " + e.getMessage().replace("\"", "'") + "\" }";
+            e.printStackTrace();
+            JsonObject errorJson = new JsonObject();
+            errorJson.addProperty("error", "Chartex scrape failed: " + e.getMessage().replace("\"", "'"));
+            resultJson = new Gson().toJson(errorJson);
         } finally {
             driver.quit();
             try {
