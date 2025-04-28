@@ -57,11 +57,15 @@ public class ChartexScraper {
 
             List<WebElement> allRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
 
+            if (allRows.isEmpty()) {
+                throw new NoSuchElementException("Nicio melodie găsită în rezultate.");
+            }
+
             boolean found = false;
             for (WebElement row : allRows) {
                 List<WebElement> columns = row.findElements(By.tagName("td"));
-                if (columns.size() >= 3) { // ne asigurăm că avem destule coloane
-                    String songTitle = columns.get(2).getText().toLowerCase(); // coloana Song Title
+                if (columns.size() >= 3) {
+                    String songTitle = columns.get(2).getText().toLowerCase();
                     if (songTitle.contains(song.toLowerCase()) && songTitle.contains(artist.toLowerCase())) {
                         WebElement link = columns.get(2).findElement(By.tagName("a"));
                         link.click();
@@ -71,8 +75,10 @@ public class ChartexScraper {
                 }
             }
 
+            // Dacă nu găsim potrivire exactă, fallback pe primul rezultat
             if (!found) {
-                throw new NoSuchElementException("Nu s-a găsit niciun rezultat potrivit pentru piesa și artistul cerut.");
+                WebElement firstLink = allRows.get(0).findElements(By.tagName("td")).get(2).findElement(By.tagName("a"));
+                firstLink.click();
             }
 
             Thread.sleep(2000);
@@ -98,7 +104,6 @@ public class ChartexScraper {
                     }
                     rowData.add(cellText);
                 }
-
                 allData.add(rowData);
             }
 
