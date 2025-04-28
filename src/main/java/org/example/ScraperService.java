@@ -1,11 +1,7 @@
 package org.example;
 
 import com.google.gson.Gson;
-import scrapers.ChartexScraper;
-import scrapers.ShazamScraper;
-import scrapers.SpotifyScraper;
-import scrapers.YtbScraper;
-import scrapers.SpotontrackScraper;
+import scrapers.*;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -28,7 +24,7 @@ public class ScraperService {
         chartex = safeScrape(() -> ChartexScraper.scrape(song, artist), "Chartex");
 
         // Decomentează dacă activezi Mediaforest
-        // mediaforest = safeScrape(() -> gson.toJson(MediaforestScraper.scrape(song, artist)), "Mediaforest");
+         mediaforest = safeScrape(() -> gson.toJson(MediaforestScraper.scrape(song, artist)), "Mediaforest");
 
         spotontrack = safeScrape(() -> gson.toJson(SpotontrackScraper.scrape(song, artist)), "Spotontrack");
 
@@ -39,7 +35,7 @@ public class ScraperService {
                 "  \"spotify\": " + spotify + ",\n" +
                 "  \"shazam\": " + shazam + ",\n" +
                 "  \"chartex\": " + chartex + ",\n" +
-//                "  \"mediaforest\": " + mediaforest + ",\n" +
+                "  \"mediaforest\": " + mediaforest + ",\n" +
                 "  \"spotontrack\": " + spotontrack + "\n" +
                 "}";
     }
