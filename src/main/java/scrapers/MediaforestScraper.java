@@ -36,18 +36,11 @@ public class MediaforestScraper {
                 "--disable-software-rasterizer",
                 "--window-size=1920,1080",
                 "--user-data-dir=" + tempProfile.toAbsolutePath(),
-                "--remote-allow-origins=*",
-                "--disable-blink-features=AutomationControlled",
-                "--no-first-run",
-                "--no-default-browser-check",
-                "--disable-infobars"
-
+                "--allow-running-insecure-content",
+                "--ignore-certificate-errors",
+                "--unsafely-treat-insecure-origin-as-secure=http://www.mediaforest.ro"
         );
-        options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
-        options.setExperimentalOption("useAutomationExtension", false);
-        options.setAcceptInsecureCerts(true);
-        options.addArguments("--allow-running-insecure-content");
-        options.addArguments("--ignore-certificate-errors");
+
 
 
 
