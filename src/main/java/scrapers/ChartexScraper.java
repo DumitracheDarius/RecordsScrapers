@@ -16,15 +16,14 @@ import java.text.Normalizer;
 import java.time.Duration;
 import java.util.*;
 import java.util.NoSuchElementException;
-import java.util.regex.Pattern;
 
 public class ChartexScraper {
 
     private static String normalize(String input) {
         if (input == null) return "";
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        normalized = normalized.replaceAll("\\p{M}", ""); // eliminăm diacriticele
-        normalized = normalized.replaceAll("[^\\p{ASCII}]", ""); // eliminăm orice altceva non-ascii
+        normalized = normalized.replaceAll("\\p{M}", ""); // elimină diacriticele
+        normalized = normalized.replaceAll("[^\\p{ASCII}]", ""); // elimină caractere speciale
         normalized = normalized.toLowerCase().replaceAll("\\s+", " ").trim();
         return normalized;
     }
@@ -52,58 +51,58 @@ public class ChartexScraper {
         );
 
         WebDriver driver = new ChromeDriver(options);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
         String resultJson;
 
         try {
-            String searchTerm = artist + " " + song;
             driver.get("https://chartex.com");
             Thread.sleep(1500);
 
             WebElement searchInput = wait.until(
                     ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[placeholder='Search for a sound']"))
             );
+
+            String searchTerm = artist + " " + song;
             searchInput.sendKeys(searchTerm, Keys.ENTER);
 
-            Thread.sleep(2500);
+            Thread.sleep(2500); // lasă un mic timp pentru încărcarea rezultatelor
 
-            List<WebElement> allRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
+            // Căutăm rezultatele (toate linkurile de melodii)
+            List<WebElement> songLinks = driver.findElements(By.cssSelector("a.text-black.underline"));
 
-            if (allRows.isEmpty()) {
-                throw new NoSuchElementException("Nicio melodie găsită în rezultate.");
+            if (songLinks.isEmpty()) {
+                throw new NoSuchElementException("Nu există rezultate la căutare.");
             }
 
-            boolean found = false;
+            // Căutăm cel mai potrivit link
             String normalizedSong = normalize(song);
             String normalizedArtist = normalize(artist);
 
-            for (WebElement row : allRows) {
-                List<WebElement> columns = row.findElements(By.tagName("td"));
-                if (columns.size() >= 3) {
-                    String siteSongTitle = normalize(columns.get(2).getText());
-                    if (siteSongTitle.contains(normalizedSong) && siteSongTitle.contains(normalizedArtist)) {
-                        WebElement link = columns.get(2).findElement(By.tagName("a"));
-                        link.click();
-                        found = true;
-                        break;
-                    }
+            boolean found = false;
+            for (WebElement link : songLinks) {
+                String linkText = normalize(link.getText());
+                if (linkText.contains(normalizedSong) && linkText.contains(normalizedArtist)) {
+                    link.click();
+                    found = true;
+                    break;
                 }
             }
 
             if (!found) {
-                // fallback: click pe primul rezultat
-                WebElement firstLink = allRows.get(0).findElements(By.tagName("td")).get(2).findElement(By.tagName("a"));
-                firstLink.click();
+                // fallback: click pe primul link
+                songLinks.get(0).click();
             }
 
             Thread.sleep(2000);
 
+            // Așteptăm statisticile după ce am dat click
             WebElement statsBox = wait.until(
                     ExpectedConditions.visibilityOfElementLocated(
                             By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
                     )
             );
 
+            // Acum găsim tabelul TikTok videos
             List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
             List<List<String>> allData = new ArrayList<>();
 
@@ -119,6 +118,7 @@ public class ChartexScraper {
                     }
                     rowData.add(cellText);
                 }
+
                 allData.add(rowData);
             }
 
