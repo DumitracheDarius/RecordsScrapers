@@ -12,11 +12,23 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.text.Normalizer;
 import java.time.Duration;
 import java.util.*;
 import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 
 public class ChartexScraper {
+
+    private static String normalize(String input) {
+        if (input == null) return "";
+        String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
+        normalized = normalized.replaceAll("\\p{M}", ""); // eliminăm diacriticele
+        normalized = normalized.replaceAll("[^\\p{ASCII}]", ""); // eliminăm orice altceva non-ascii
+        normalized = normalized.toLowerCase().replaceAll("\\s+", " ").trim();
+        return normalized;
+    }
+
     public static String scrape(String song, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
@@ -62,11 +74,14 @@ public class ChartexScraper {
             }
 
             boolean found = false;
+            String normalizedSong = normalize(song);
+            String normalizedArtist = normalize(artist);
+
             for (WebElement row : allRows) {
                 List<WebElement> columns = row.findElements(By.tagName("td"));
                 if (columns.size() >= 3) {
-                    String songTitle = columns.get(2).getText().toLowerCase();
-                    if (songTitle.contains(song.toLowerCase()) && songTitle.contains(artist.toLowerCase())) {
+                    String siteSongTitle = normalize(columns.get(2).getText());
+                    if (siteSongTitle.contains(normalizedSong) && siteSongTitle.contains(normalizedArtist)) {
                         WebElement link = columns.get(2).findElement(By.tagName("a"));
                         link.click();
                         found = true;
@@ -75,8 +90,8 @@ public class ChartexScraper {
                 }
             }
 
-            // Dacă nu găsim potrivire exactă, fallback pe primul rezultat
             if (!found) {
+                // fallback: click pe primul rezultat
                 WebElement firstLink = allRows.get(0).findElements(By.tagName("td")).get(2).findElement(By.tagName("a"));
                 firstLink.click();
             }
