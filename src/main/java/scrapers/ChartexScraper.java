@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
+import java.util.NoSuchElementException;
 
 public class ChartexScraper {
     public static String scrape(String song, String artist) {
@@ -52,14 +53,28 @@ public class ChartexScraper {
             );
             searchInput.sendKeys(searchTerm, Keys.ENTER);
 
-            Thread.sleep(2000);
+            Thread.sleep(2500);
 
-            WebElement firstResult = wait.until(
-                    ExpectedConditions.elementToBeClickable(
-                            By.xpath("//a[contains(text(), '" + song + "')]")
-                    )
-            );
-            firstResult.click();
+            List<WebElement> allRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
+
+            boolean found = false;
+            for (WebElement row : allRows) {
+                List<WebElement> columns = row.findElements(By.tagName("td"));
+                if (columns.size() >= 3) { // ne asigurăm că avem destule coloane
+                    String songTitle = columns.get(2).getText().toLowerCase(); // coloana Song Title
+                    if (songTitle.contains(song.toLowerCase()) && songTitle.contains(artist.toLowerCase())) {
+                        WebElement link = columns.get(2).findElement(By.tagName("a"));
+                        link.click();
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!found) {
+                throw new NoSuchElementException("Nu s-a găsit niciun rezultat potrivit pentru piesa și artistul cerut.");
+            }
+
             Thread.sleep(2000);
 
             WebElement statsBox = wait.until(
@@ -87,7 +102,7 @@ public class ChartexScraper {
                 allData.add(rowData);
             }
 
-            // Scriem CSV corect
+            // Scriem CSV
             String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_tiktok.csv";
             Path imagesDir = Paths.get(System.getProperty("user.dir"), "images");
             if (!Files.exists(imagesDir)) {
@@ -102,7 +117,7 @@ public class ChartexScraper {
                 }
             }
 
-            // Construim JSON-ul safe cu Gson
+            // Construim JSON
             JsonObject responseJson = new JsonObject();
             responseJson.addProperty("chartexStats", statsBox.getText().replace("\"", "'").replace("\n", " ").replace("\r", " "));
 
