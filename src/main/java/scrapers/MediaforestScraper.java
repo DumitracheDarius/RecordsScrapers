@@ -35,8 +35,16 @@ public class MediaforestScraper {
                 "--disable-dev-shm-usage",
                 "--disable-software-rasterizer",
                 "--window-size=1920,1080",
-                "--user-data-dir=" + tempProfile.toAbsolutePath()
+                "--user-data-dir=" + tempProfile.toAbsolutePath(),
+                "--remote-allow-origins=*",
+                "--disable-blink-features=AutomationControlled",
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-infobars"
         );
+        options.setExperimentalOption("excludeSwitches", Arrays.asList("enable-automation"));
+        options.setExperimentalOption("useAutomationExtension", false);
+
 
         WebDriver driver = new ChromeDriver(options);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
