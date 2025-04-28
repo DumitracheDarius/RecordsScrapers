@@ -44,6 +44,14 @@ public class MediaforestScraper {
 
         try {
             driver.get("http://www.mediaforest.ro/Membership/Login.aspx");
+            try {
+                WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
+                WebElement acceptCookiesButton = shortWait.until(ExpectedConditions.elementToBeClickable(By.id("btn-cookie-allow")));
+                acceptCookiesButton.click();
+                Thread.sleep(500);
+            } catch (TimeoutException ignored) {
+                // Nu a aparut popup-ul, continuăm
+            }
 
             wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("ContentPlaceHolder1_Login1_UserName"))).sendKeys(username);
             Thread.sleep(500);
