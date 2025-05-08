@@ -1,3 +1,4 @@
+
 package scrapers;
 
 import org.openqa.selenium.*;
@@ -81,54 +82,10 @@ public class YtbScraper {
                         allLines = Files.readAllLines(filePath);
                     }
 
-                    long lastViews = -1;
-                    if (!allLines.isEmpty()) {
-                        String[] lastEntry = allLines.get(allLines.size() - 1).split(",");
-                        lastViews = Long.parseLong(lastEntry[1]);
-                    }
-
-                    long difference = lastViews >= 0 ? currentViews - lastViews : 0;
-
                     allLines.add(timestamp + "," + currentViews);
                     Files.write(filePath, allLines, StandardCharsets.UTF_8);
 
-                    // Calcul medie zilnică și săptămânală
-                    Map<String, List<Long>> dailyMap = new HashMap<>();
-                    Map<String, Long> dailyAverage = new HashMap<>();
-                    List<Long> last7daysViews = new ArrayList<>();
-
-                    for (String line : allLines) {
-                        String[] parts = line.split(",");
-                        String date = parts[0].split(" ")[0];
-                        long views = Long.parseLong(parts[1]);
-
-                        dailyMap.putIfAbsent(date, new ArrayList<>());
-                        dailyMap.get(date).add(views);
-                    }
-
-                    for (String date : dailyMap.keySet()) {
-                        List<Long> viewsList = dailyMap.get(date);
-                        long sum = 0;
-                        for (long v : viewsList) sum += v;
-                        dailyAverage.put(date, sum / viewsList.size());
-                    }
-
-                    LocalDate today = LocalDate.now();
-                    for (int i = 0; i < 7; i++) {
-                        String day = today.minusDays(i).toString();
-                        if (dailyAverage.containsKey(day)) {
-                            last7daysViews.add(dailyAverage.get(day));
-                        }
-                    }
-
-                    long weeklyAverage = last7daysViews.isEmpty() ? 0 :
-                            last7daysViews.stream().mapToLong(Long::longValue).sum() / last7daysViews.size();
-
-                    resultJson = "{ \"Youtube title\": \"" + titleElement.getAttribute("title") + "\", " +
-                            "\"Youtube views\": \"" + viewsText + "\", " +
-                            "\"Views difference since last check\": \"" + difference + "\", " +
-                            "\"Daily average (today)\": \"" + dailyAverage.getOrDefault(today.toString(), currentViews) + "\", " +
-                            "\"Weekly average (last 7 days)\": \"" + weeklyAverage + "\" }";
+                    resultJson = generateGraphData(allLines);
 
                     found = true;
                     break;
@@ -158,4 +115,18 @@ public class YtbScraper {
 
         return resultJson;
     }
+
+    private static String generateGraphData(List<String> allLines) {
+        StringBuilder json = new StringBuilder("{ \"history\": [");
+        for (String line : allLines) {
+            String[] parts = line.split(",");
+            json.append("{ \"timestamp\": \"").append(parts[0]).append("\", \"views\": ").append(parts[1]).append(" },");
+        }
+        if (json.charAt(json.length() - 1) == ',') {
+            json.setLength(json.length() - 1);
+        }
+        json.append("] }");
+        return json.toString();
+    }
 }
+
