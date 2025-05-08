@@ -10,12 +10,17 @@ import java.io.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.text.NumberFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class SpotifyScraper {
+
+    private static String formatNumber(long number) {
+        return NumberFormat.getInstance(Locale.GERMANY).format(number); // ex: 250.000
+    }
 
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
@@ -132,10 +137,10 @@ public class SpotifyScraper {
                     last7daysStreams.stream().mapToLong(Long::longValue).sum() / last7daysStreams.size();
 
             resultJson = "{ \"Spotify title\": \"" + title + "\", " +
-                    "\"Spotify streams\": \"" + streamCount + "\", " +
-                    "\"Streams difference since last check\": \"" + difference + "\", " +
-                    "\"Daily average (today)\": \"" + dailyAverage.getOrDefault(today.toString(), streamCount) + "\", " +
-                    "\"Weekly average (last 7 days)\": \"" + weeklyAverage + "\", " +
+                    "\"Spotify streams\": \"" + formatNumber(streamCount) + "\", " +
+                    "\"Streams difference since last check\": \"" + formatNumber(difference) + "\", " +
+                    "\"Daily average (today)\": \"" + formatNumber(dailyAverage.getOrDefault(today.toString(), streamCount)) + "\", " +
+                    "\"Weekly average (last 7 days)\": \"" + formatNumber(weeklyAverage) + "\", " +
                     "\"Chart data\": " + new Gson().toJson(chartData) + " }";
 
         } catch (Exception e) {

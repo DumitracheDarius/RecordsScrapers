@@ -11,14 +11,18 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ShazamScraper {
+
+    private static String formatNumber(long number) {
+        return NumberFormat.getInstance(Locale.GERMANY).format(number); // ex: 250.000
+    }
 
     public static String scrape(String songName, String artist) {
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
@@ -130,10 +134,10 @@ public class ShazamScraper {
                     last7daysCounts.stream().mapToLong(Long::longValue).sum() / last7daysCounts.size();
 
             resultJson = "{ \"Shazam title\": \"" + songName + "\", " +
-                    "\"Shazam count\": \"" + shazamCount + "\", " +
-                    "\"Difference since last check\": \"" + difference + "\", " +
-                    "\"Daily average (today)\": \"" + dailyAverage.getOrDefault(today.toString(), shazamCount) + "\", " +
-                    "\"Weekly average (last 7 days)\": \"" + weeklyAverage + "\", " +
+                    "\"Shazam count\": \"" + formatNumber(shazamCount) + "\", " +
+                    "\"Difference since last check\": \"" + formatNumber(difference) + "\", " +
+                    "\"Daily average (today)\": \"" + formatNumber(dailyAverage.getOrDefault(today.toString(), shazamCount)) + "\", " +
+                    "\"Weekly average (last 7 days)\": \"" + formatNumber(weeklyAverage) + "\", " +
                     "\"Chart data\": " + new Gson().toJson(chartData) + " }";
 
         } catch (Exception e) {
