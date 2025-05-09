@@ -3,8 +3,7 @@ package scrapers;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.*;
 
 import java.io.File;
 import java.nio.file.*;
@@ -13,15 +12,43 @@ import java.time.Duration;
 import java.util.*;
 
 public class SpotontrackScraper {
+
     public static Map<String, Object> scrape(String song, String artist) {
+        final int maxRetries = 3;
+        int attempt = 0;
+        Map<String, Object> finalResult = null;
+
+        while (attempt < maxRetries) {
+            attempt++;
+            System.out.println("🔄 Spotontrack scrape attempt " + attempt + "/" + maxRetries);
+
+            Map<String, Object> result = attemptScrape(song, artist);
+            if (result.containsKey("error")) {
+                System.out.println("⚠ Attempt " + attempt + " failed: " + result.get("error"));
+                if (attempt < maxRetries) {
+                    try { Thread.sleep(2000); } catch (InterruptedException ignored) {}
+                }
+                finalResult = result;
+            } else {
+                System.out.println("✅ Spotontrack scrape succeeded on attempt " + attempt);
+                return result;
+            }
+        }
+
+        System.out.println("❌ All attempts failed. Returning last error.");
+        return finalResult;
+    }
+
+    private static Map<String, Object> attemptScrape(String song, String artist) {
+        Map<String, Object> result = new HashMap<>();
         System.setProperty("webdriver.chrome.driver", System.getenv("CHROMEDRIVER_PATH"));
 
-        // Creează un profil unic de Chrome (evită conflictele în Docker/CI/CD)
         Path tempProfile;
         try {
             tempProfile = Files.createTempDirectory("chrome-profile-spotontrack");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+            result.put("error", "Failed to create temp Chrome profile: " + e.getMessage());
+            return result;
         }
 
         ChromeOptions options = new ChromeOptions();
@@ -37,7 +64,6 @@ public class SpotontrackScraper {
 
         WebDriver driver = new ChromeDriver(options);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(40));
-        Map<String, Object> result = new HashMap<>();
 
         try {
             driver.get("https://www.spotontrack.com/login");
@@ -46,7 +72,6 @@ public class SpotontrackScraper {
             driver.findElement(By.xpath("//button[contains(text(),'Login')]")).click();
 
             wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[aria-controls='search-modal']"))).click();
-
             WebElement searchInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("modal-search")));
             searchInput.sendKeys(artist);
             Thread.sleep(3000);
@@ -96,8 +121,7 @@ public class SpotontrackScraper {
             result.put("spotontrack_spotify_image", "http://localhost:8000/images/" + filename);
 
         } catch (Exception e) {
-            result.put("error", "Spotontrack Exception: " + e.getMessage());
-            e.printStackTrace();
+            result.put("error", "Spotontrack scrape failed: " + e.getMessage());
         } finally {
             driver.quit();
             try {

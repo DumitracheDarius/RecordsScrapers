@@ -15,15 +15,14 @@ import java.nio.file.*;
 import java.text.Normalizer;
 import java.time.Duration;
 import java.util.*;
-import java.util.NoSuchElementException;
 
 public class ChartexScraper {
 
     private static String normalize(String input) {
         if (input == null) return "";
         String normalized = Normalizer.normalize(input, Normalizer.Form.NFD);
-        normalized = normalized.replaceAll("\\p{M}", ""); // elimină diacriticele
-        normalized = normalized.replaceAll("[^\\p{ASCII}]", ""); // elimină caractere speciale
+        normalized = normalized.replaceAll("\\p{M}", "");
+        normalized = normalized.replaceAll("[^\\p{ASCII}]", "");
         normalized = normalized.toLowerCase().replaceAll("\\s+", " ").trim();
         return normalized;
     }
@@ -35,7 +34,7 @@ public class ChartexScraper {
         try {
             tempProfile = Files.createTempDirectory("chrome-profile-chartex");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to create temp Chrome profile: " + e.getMessage());
+            return errorJson("Failed to create temp Chrome profile: " + e.getMessage());
         }
 
         ChromeOptions options = new ChromeOptions();
@@ -58,23 +57,18 @@ public class ChartexScraper {
             driver.get("https://chartex.com");
             Thread.sleep(1500);
 
-            WebElement searchInput = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[placeholder='Search for a sound']"))
-            );
+            WebElement searchInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[placeholder='Search for a sound']")));
 
             String searchTerm = artist + " " + song;
             searchInput.sendKeys(searchTerm, Keys.ENTER);
 
-            Thread.sleep(2500); // lasă un mic timp pentru încărcarea rezultatelor
+            Thread.sleep(2500);
 
-            // Căutăm rezultatele (toate linkurile de melodii)
             List<WebElement> songLinks = driver.findElements(By.cssSelector("a.text-black.underline"));
-
             if (songLinks.isEmpty()) {
-                throw new NoSuchElementException("Nu există rezultate la căutare.");
+                return errorJson("No results found for search.");
             }
 
-            // Căutăm cel mai potrivit link
             String normalizedSong = normalize(song);
             String normalizedArtist = normalize(artist);
 
@@ -82,34 +76,44 @@ public class ChartexScraper {
             for (WebElement link : songLinks) {
                 String linkText = normalize(link.getText());
                 if (linkText.contains(normalizedSong) && linkText.contains(normalizedArtist)) {
-                    link.click();
-                    found = true;
-                    break;
+                    try {
+                        link.click();
+                        found = true;
+                        break;
+                    } catch (Exception clickErr) {
+                        return errorJson("Failed to click matched link: " + clickErr.getMessage());
+                    }
                 }
             }
 
             if (!found) {
-                // fallback: click pe primul link
-                songLinks.get(0).click();
+                try {
+                    songLinks.get(0).click();
+                } catch (Exception fallbackErr) {
+                    return errorJson("Fallback click failed: " + fallbackErr.getMessage());
+                }
             }
 
             Thread.sleep(2000);
 
-            // Așteptăm statisticile după ce am dat click
-            WebElement statsBox = wait.until(
-                    ExpectedConditions.visibilityOfElementLocated(
-                            By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
-                    )
-            );
+            WebElement statsBox;
+            try {
+                statsBox = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                        By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
+                ));
+            } catch (TimeoutException te) {
+                return errorJson("Stats box did not load in time.");
+            }
 
-            // Acum găsim tabelul TikTok videos
             List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
-            List<List<String>> allData = new ArrayList<>();
+            if (tableRows.isEmpty()) {
+                return errorJson("No TikTok videos table found.");
+            }
 
+            List<List<String>> allData = new ArrayList<>();
             for (WebElement row : tableRows) {
                 List<WebElement> cells = row.findElements(By.tagName("td"));
                 List<String> rowData = new ArrayList<>();
-
                 for (int i = 0; i < cells.size(); i++) {
                     String cellText = cells.get(i).getText().replace("\"", "'").replace("\n", " ").replace("\r", " ");
                     if (i == cells.size() - 1) {
@@ -118,16 +122,12 @@ public class ChartexScraper {
                     }
                     rowData.add(cellText);
                 }
-
                 allData.add(rowData);
             }
 
-            // Scriem CSV
             String fileName = song.replaceAll("\\s+", "_") + "_" + artist.replaceAll("\\s+", "_") + "_tiktok.csv";
             Path imagesDir = Paths.get(System.getProperty("user.dir"), "images");
-            if (!Files.exists(imagesDir)) {
-                Files.createDirectories(imagesDir);
-            }
+            Files.createDirectories(imagesDir);
             Path csvPath = imagesDir.resolve(fileName);
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(csvPath, StandardCharsets.UTF_8))) {
@@ -137,10 +137,8 @@ public class ChartexScraper {
                 }
             }
 
-            // Construim JSON
             JsonObject responseJson = new JsonObject();
             responseJson.addProperty("chartexStats", statsBox.getText().replace("\"", "'").replace("\n", " ").replace("\r", " "));
-
             JsonArray rowsArray = new JsonArray();
             for (List<String> row : allData) {
                 JsonArray rowArray = new JsonArray();
@@ -154,10 +152,7 @@ public class ChartexScraper {
             resultJson = new Gson().toJson(responseJson);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            JsonObject errorJson = new JsonObject();
-            errorJson.addProperty("error", "Chartex scrape failed: " + e.getMessage().replace("\"", "'"));
-            resultJson = new Gson().toJson(errorJson);
+            resultJson = errorJson("Chartex scrape failed: " + e.getMessage());
         } finally {
             driver.quit();
             try {
@@ -169,5 +164,11 @@ public class ChartexScraper {
         }
 
         return resultJson;
+    }
+
+    private static String errorJson(String message) {
+        JsonObject error = new JsonObject();
+        error.addProperty("error", message);
+        return new Gson().toJson(error);
     }
 }
