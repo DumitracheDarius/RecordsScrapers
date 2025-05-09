@@ -102,7 +102,7 @@ public class ChartexScraper {
                     By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
             ));
 
-            List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-sounds tbody tr"));
+            List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
             if (tableRows.isEmpty()) {
                 return errorJson("No TikTok sounds table found.");
             }
