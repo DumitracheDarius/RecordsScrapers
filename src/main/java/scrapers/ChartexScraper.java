@@ -54,6 +54,7 @@ public class ChartexScraper {
         String resultJson;
 
         try {
+            System.out.println("🔍 Chartex scrape started for: " + artist + " - " + song);
             driver.get("https://chartex.com");
             Thread.sleep(1500);
 
@@ -71,12 +72,14 @@ public class ChartexScraper {
             String normalizedArtist = normalize(artist);
 
             boolean found = false;
-            for (WebElement link : songLinks) {
-                String linkText = normalize(link.getText());
+            for (int i = 0; i < songLinks.size(); i++) {
+                String linkText = normalize(songLinks.get(i).getText());
+                System.out.println("🎯 Checking link: " + linkText);
                 if (linkText.contains(normalizedSong) && linkText.contains(normalizedArtist)) {
                     try {
-                        link.click();
+                        driver.findElements(By.cssSelector("a.text-black.underline")).get(i).click();
                         found = true;
+                        System.out.println("✅ Found matching link, clicked.");
                         break;
                     } catch (Exception clickErr) {
                         return errorJson("Failed to click matched link: " + clickErr.getMessage());
@@ -86,7 +89,8 @@ public class ChartexScraper {
 
             if (!found) {
                 try {
-                    songLinks.get(0).click();
+                    driver.findElements(By.cssSelector("a.text-black.underline")).get(0).click();
+                    System.out.println("⚠️ No exact match, clicked first result.");
                 } catch (Exception fallbackErr) {
                     return errorJson("Fallback click failed: " + fallbackErr.getMessage());
                 }
@@ -98,20 +102,23 @@ public class ChartexScraper {
                     By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
             ));
 
-            List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
+            List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-sounds tbody tr"));
             if (tableRows.isEmpty()) {
-                return errorJson("No TikTok videos table found.");
+                return errorJson("No TikTok sounds table found.");
             }
 
             boolean clickedOfficialSound = false;
-            for (WebElement row : tableRows) {
+            for (int i = 0; i < tableRows.size(); i++) {
+                WebElement row = driver.findElements(By.cssSelector("#tiktok-sounds tbody tr")).get(i);
                 List<WebElement> cells = row.findElements(By.tagName("td"));
                 if (cells.size() >= 5) {
                     String fifthCol = cells.get(4).getText().trim();
+                    System.out.println("🔎 Row " + i + " - 5th column: " + fifthCol);
                     if ("Official Sound".equalsIgnoreCase(fifthCol)) {
                         try {
                             cells.get(2).click();
                             clickedOfficialSound = true;
+                            System.out.println("✅ Clicked 3rd column of Official Sound row.");
                             break;
                         } catch (Exception clickErr) {
                             return errorJson("Failed to click Official Sound cell: " + clickErr.getMessage());
@@ -129,13 +136,14 @@ public class ChartexScraper {
 
             List<List<String>> allData = new ArrayList<>();
             List<WebElement> newTableRows = videoStatsTable.findElements(By.cssSelector("tbody tr"));
-            for (WebElement row : newTableRows) {
+            for (int i = 0; i < newTableRows.size(); i++) {
+                WebElement row = driver.findElements(By.cssSelector("#tiktok-videos tbody tr")).get(i);
                 List<WebElement> cells = row.findElements(By.tagName("td"));
                 List<String> rowData = new ArrayList<>();
-                for (int i = 0; i < cells.size(); i++) {
-                    String cellText = cells.get(i).getText().replace("\"", "'").replace("\n", " ").replace("\r", " ");
-                    if (i == cells.size() - 1) {
-                        WebElement link = cells.get(i).findElement(By.tagName("a"));
+                for (int j = 0; j < cells.size(); j++) {
+                    String cellText = cells.get(j).getText().replace("\"", "'").replace("\n", " ").replace("\r", " ");
+                    if (j == cells.size() - 1) {
+                        WebElement link = cells.get(j).findElement(By.tagName("a"));
                         cellText = link.getAttribute("href");
                     }
                     rowData.add(cellText);
@@ -168,8 +176,10 @@ public class ChartexScraper {
             responseJson.add("tiktokRows", rowsArray);
 
             resultJson = new Gson().toJson(responseJson);
+            System.out.println("✅ Chartex scrape completed successfully.");
 
         } catch (Exception e) {
+            System.err.println("❌ Chartex scrape failed: " + e.getMessage());
             resultJson = errorJson("Chartex scrape failed: " + e.getMessage());
         } finally {
             driver.quit();
