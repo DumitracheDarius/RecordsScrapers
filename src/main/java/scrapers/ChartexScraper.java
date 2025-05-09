@@ -50,7 +50,7 @@ public class ChartexScraper {
         );
 
         WebDriver driver = new ChromeDriver(options);
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(30));
         String resultJson;
 
         try {
@@ -58,11 +58,9 @@ public class ChartexScraper {
             Thread.sleep(1500);
 
             WebElement searchInput = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[placeholder='Search for a sound']")));
-
             String searchTerm = artist + " " + song;
             searchInput.sendKeys(searchTerm, Keys.ENTER);
-
-            Thread.sleep(2500);
+            Thread.sleep(3000);
 
             List<WebElement> songLinks = driver.findElements(By.cssSelector("a.text-black.underline"));
             if (songLinks.isEmpty()) {
@@ -94,24 +92,44 @@ public class ChartexScraper {
                 }
             }
 
-            Thread.sleep(2000);
+            Thread.sleep(3000);
 
-            WebElement statsBox;
-            try {
-                statsBox = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                        By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
-                ));
-            } catch (TimeoutException te) {
-                return errorJson("Stats box did not load in time.");
-            }
+            WebElement statsBox = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("div.w-full.md\\:w-\\[25vw\\].text-black.text-center.flex.flex-col.justify-center.items-center.border.p-6.rounded-lg")
+            ));
 
             List<WebElement> tableRows = driver.findElements(By.cssSelector("#tiktok-videos tbody tr"));
             if (tableRows.isEmpty()) {
                 return errorJson("No TikTok videos table found.");
             }
 
-            List<List<String>> allData = new ArrayList<>();
+            boolean clickedOfficialSound = false;
             for (WebElement row : tableRows) {
+                List<WebElement> cells = row.findElements(By.tagName("td"));
+                if (cells.size() >= 5) {
+                    String fifthCol = cells.get(4).getText().trim();
+                    if ("Official Sound".equalsIgnoreCase(fifthCol)) {
+                        try {
+                            cells.get(2).click();
+                            clickedOfficialSound = true;
+                            break;
+                        } catch (Exception clickErr) {
+                            return errorJson("Failed to click Official Sound cell: " + clickErr.getMessage());
+                        }
+                    }
+                }
+            }
+
+            if (!clickedOfficialSound) {
+                return errorJson("No row with 'Official Sound' found in table.");
+            }
+
+            Thread.sleep(3000);
+            WebElement videoStatsTable = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("tiktok-videos")));
+
+            List<List<String>> allData = new ArrayList<>();
+            List<WebElement> newTableRows = videoStatsTable.findElements(By.cssSelector("tbody tr"));
+            for (WebElement row : newTableRows) {
                 List<WebElement> cells = row.findElements(By.tagName("td"));
                 List<String> rowData = new ArrayList<>();
                 for (int i = 0; i < cells.size(); i++) {
